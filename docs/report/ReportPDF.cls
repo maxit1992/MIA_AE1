@@ -14,7 +14,7 @@
 % 1) This class file defines the structure and layout of the template file (main.tex).
 % 2) It has been written in such a way that under most circumstances you should not need
 % to edit it. Updates would be harder. If you do make changes, please change the name of
-% the file and add a comment to make your changes more visible.
+% the file and add a comment to make your changes more\use visible.
 %
 % Class license:
 % LPPL v1.3c (http://www.latex-project.org/lppl)
@@ -32,6 +32,8 @@
 
 \RequirePackage{etoolbox}
 \RequirePackage{xparse}
+\RequirePackage{algorithm}
+\RequirePackage{algpseudocode}
 \newbool{nolistspace}
 \newbool{codirector}
 %\booltrue{codirector}

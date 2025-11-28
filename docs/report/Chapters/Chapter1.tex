@@ -22,23 +22,33 @@
 %----------------------------------------------------------------------------------------
 \section{Introducción}
 
-En el presente trabajo práctico, se desarrolla la implementación del algoritmo de Optimización por Enjambre de Partículas (PSO) en la búsqueda de una solución óptima a un problema de posicionamiento. El objetivo es poder evaluar la implementación e idoneidad del algoritmo y compararlo con otros métodos simples.
+En el presente trabajo práctico, se desarrolla la implementación del algoritmo de Optimización por Enjambre de Partículas (PSO) en la búsqueda de una solución óptima a un problema de posicionamiento y recorrido. El objetivo es poder evaluar la implementación e idoneidad del algoritmo y compararlo con otros métodos más simples.
 
-En el problema planteado se parte de una posición global conocida y se simula la pérdida de señal del dispositivo GPS y la presencia de mediciones de velocidad y ángulo de movimiento respecto al norte. El objetivo es poder continuar trazando una ubicación precisa e idónea del recorrido realizado, sin contar con las mediciones de posicionamiento. Esta situación es común en sistemas embebidos y puede ocurrir ya sea por pérdida de señal del GPS (entre las mas recurrentes: por un diseño incorrecto de la antena de recepción, por fallas en el software del dispositivo o bien perdida de línea de vista al cielo) o bien porque se desea reducir el consumo eléctrico y se hace un apagado temporal del GPS.
+En el problema planteado se parte de una única posición global inicial conocida a partir de la cual solo se dispone de mediciones de velocidad y ángulo de movimiento respecto al norte. El objetivo es poder continuar trazando una ubicación precisa e idónea del recorrido realizado, sin contar con las mediciones de posicionamiento. Esta situación es común en sistemas embebidos y puede ocurrir ya sea por pérdida de señal del GPS (por ejemplo por un diseño incorrecto de la antena de recepción, por fallas en el software del dispositivo o por pérdida de línea de vista al cielo) o bien porque se desea reducir el consumo eléctrico y se hace un apagado temporal del GPS.
 
-Como prueba de concepto, se realizó un recorrido por la ciudad de Rosario en auto y se utilizó un celular para hacer datalogging de los sensores junto con la información del GPS. Se probará si es posible realizar el seguimiento del vehículo sin utilizar la latitud y longitud del GPS.
+Inicialmente se realizó una prueba utilizando datos reales de sensores y se comprobó que que el ruido inherente de los mismos genera un  recorrido muy alejado del real. Por este motivo, se prosiguió con una simulación con optimización PSO para lograr ajustar las mediciones a valores óptimos que mejorarán el recorrido simulado.
 
-Inicialmente se hará una simulación utilizando los datos raw de los sensores y se demostrará que el ruido inherente de los mismos genera un  recorrido muy alejado del real. A continuación se incluirá en la simulación optimización PSO para lograr ajustar las mediciones a valores óptimos que mejorarán el recorrido simulado. 
+\section{Datos}
+
+Para poder obtener datos sobre los cuales trabajar, se realizó un recorrido por la ciudad de Rosario en auto y se utilizó un celular para hacer el registro de datos de los sensores junto con la información del GPS. Se probará si es posible realizar el seguimiento del vehículo utilizando solamente la latitud y longitud del GPS del punto de inicio y los valores de la velocidad (en metros/segundos) y ángulo de movimiento (en grados respecto al norte). A modo de ejemplo, en la figura \ref{fig:route_ds} se muestran las primeras lineas de los datos recolectados .
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./Figures/route_ds.png}
+	\caption{Registro de datos de sensores para el recorrido a utilizar.}
+	\label{fig:route_ds}
+\end{figure}
 
 \section{Mapa}
 
-Para poder realizar las simulaciones es necesario contar con utilidades que realicen gráficos y cálculos geográficos. Con este fin se implementó en Python la clase \textit{Map} con la siguientes características:
+Para realizar las simulaciones es necesario contar con utilidades que realicen gráficos y cálculos geográficos. Con este fin se implementó en Python la clase \textit{Map} con la siguientes características:
 \begin{itemize}
-    \item Utiliza la librería OpenCV y Matplotlib para poder graficar el mapa de la zona de interés y marcar sobre el mismo puntos rojos que representan posiciones (latitud y longitud) y trayectos (figura \ref{fig:map}). 
-    \item Método de calibración para poder realizar la transformación entre latitudes y longitudes y píxeles en la imagen del mapa, de manera de poder trabajar indistintamente con cualquiera de los dos sistemas de referencia. Para poder realizar la calibración correcta, se tomaron 4 puntos de referencia conocidos y se entrenaron dos modelos de regresión lineal para realizar las transformaciones bidireccionales latitud/longitud $\Leftrightarrow$ pixeles verticales/horizontales.
-    \item Soporta mapa de política con máscaras de probabilidad (figura \ref{fig:policy}) que asignan a cada pixel del mapa original un valor entre 0 y 1 según la posición sea más probable o menos. Así, las calles y avenidas tendrán un valor de 1, mientras que los centros de manzana, el río y zonas donde es imposible realizar un recorrido tienen valor 0. Entre ambos valores 1 y 0, la máscara asigna valores decrecientes para poder obtener una política que varía en forma suave.
-    \item Algoritmo que permite obtener el punto final (latitud y longitud) luego de desplazarse X métros con un cierto ángulo Y respecto al norte desde una posición inicial conocida.
-    \item Algoritmo Haversine para obtener la distancia en metros y el angulo respecto al norte del segmento sobre la superficie Terrestre que conecta dos puntos con posiciones conocidas.
+    \item Utiliza la librería OpenCV y Matplotlib para poder trazar el mapa de la zona de interés y marcar sobre el mismo puntos rojos que representan posiciones (latitud y longitud) y trayectos. En la figura \ref{fig:map} se observa el mapa utilizado. 
+    \item Método de calibración para transformar entre latitud/longitud $\Leftrightarrow$ pixeles verticales/horizontales sobre la imagen del mapa, de manera de poder utilizar indistintamente cualquiera de los dos sistemas de referencia. Durante la calibración, se tomaron 4 puntos de referencia conocidos y se entrenaron dos modelos de regresión lineal.
+    \item Algoritmo que permite obtener el punto final (latitud y longitud) luego de desplazarse una cierta cantidad de metros, con un cierto ángulo respecto al norte, desde una posición inicial conocida.
+    \item Algoritmo Haversine para obtener la distancia en metros y el ángulo respecto al norte del segmento sobre la superficie Terrestre que conecta dos puntos con posiciones conocidas.
+    \item Soporte de mapa de política con máscaras de probabilidad. (figura \ref{fig:policy}) que asignan a cada pixel del mapa original un valor entre 0 y 1 según la posición sea más probable o menos. Así, las calles y avenidas tendrán un valor de 1, mientras que los centros de manzana, el río y zonas donde es imposible realizar un recorrido tienen valor 0. Entre ambos valores 1 y 0, la máscara asigna valores decrecientes para poder obtener una política que varía en forma suave.
+    
 \end{itemize}
 
 \begin{figure}[htbp]
@@ -48,52 +58,103 @@ Para poder realizar las simulaciones es necesario contar con utilidades que real
 	\label{fig:map}
 \end{figure}
 
+\section{Mapa de aptitud}
+
+Cuantificar el ajuste o idoneidad de un trayecto requiere de una métrica medible. Esta métrica se puede obtener utilizando un mapa de aptitud con máscaras de probabilidad, que asignan a cada pixel del mapa original un valor entre 0 y 1.0 según la posición sea más probable o menos. Así, las calles y avenidas tendrán un valor de 1.0, mientras que los centros de manzana, el río y zonas donde es imposible realizar un recorrido tienen valor 0. Entre ambos extremos, la máscara asigna valores decrecientes para poder obtener una función de aptitud que varía en forma suave. Estos valores de probabildiad nos permiten cuantificar tanto la aptitud de una posición única (obteniendo la probabilidad de ese pixel) o la aptitud de un recorrido acumulando la aptitud de cada una de las posiciones. En la figura \ref{fig:policy} se muestra el mapa mencionado. 
+
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=.7\textwidth]{./Figures/policy.jpg}
-	\caption{Mapa de política con máscara de probabilidad.}
+	\caption{Mapa de aptitud con máscara de probabilidad.}
 	\label{fig:policy}
 \end{figure}
 
 \section{Partícula}
 
-Otra utilidad necesaria es la clase que modela el objeto que se desplaza por el mapa. Este objeto se implementó en Python en la clase \textit{Particle}, que posee las siguientes características:
+Otra utilidad necesaria es la clase que modela el objeto que se desplaza por el mapa. Este objeto se implementó en Python en la clase \textit{Particle}, y posee las siguientes características:
 \begin{itemize}
-    \item Se inicializa con una posición inicial (latitud, longitud), una serie de tiempo de velocidades, una serie de tiempo de ángulos de movimiento respecto al norte y una instancia de la clase \textit{Map} donde se realizará el recorrido.
+    \item Se inicializa con una posición inicial (latitud, longitud), una serie de tiempo de velocidad y de ángulo de movimiento respecto al norte, y una instancia de la clase \textit{Map} donde se realizará el recorrido.
     \item Provee métodos para moverse un paso de tiempo, utilizando las series de tiempo provistas en la inicialización.
-    \item Provee métodos para acumular distancia desplazada. Este método es útil para no ejecutar algoritmos en cada paso de tiempo (donde el desplazamiento puede haber sido 0 metros si el objeto se encontraba parado), sino luego de desplazarse determinada distancia.
-    \item Provee métodos para evaluar una posición o un movimiento en base a la política cargada en la instancia de la clase \textit{Map}.
-    \item Provee métodos para ejecutar el algoritmo PSO, en base a la posición actual, la mejor posición (medida con respecto a la política) hasta el momento de la partícula en cuestión, y la posición de la mejor partícula del enjambre.
+    \item Provee métodos para acumular distancia desplazada. Esto es útil para no ejecutar algoritmos en cada paso de tiempo (donde el desplazamiento puede haber sido de 0 metros si el objeto se encontraba parado), sino luego de desplazarse determinada distancia.
+    \item Provee métodos para evaluar una posición o un movimiento en base al mapa de aptitud cargado en la instancia de la clase \textit{Map}.
+    \item Provee métodos para ejecutar el algoritmo PSO, en base a la posición actual, la mejor posición (medida con respecto a la aptitud) hasta el momento de la partícula en cuestión, y la posición de la mejor partícula del enjambre.
 \end{itemize}
-
-\section{Datos}
-
-TODO
-
-\section{Política}
-
-TODO
 
 \section{Simulación}
 
 \subsection{Datos crudos}
 
-Inicialmente, y a fin de tener una base de comparación, se crea una única partícula con posición inicial conocida y los datos de movimiento (velocidad y ángulo) sin procesar tal cual se obtuvieron del datalogger. Posteriormente se ejecutó el método \textit{move} de la clase \textit{Particle} repetidas veces hasta ejecutar todos los pasos disponibles .En resumen, el algoritmo de evolución sería el siguiente:
+Inicialmente, y a fin de tener una base de comparación, se crea una única partícula con posición inicial conocida y se utilizan los datos originales de movimiento (velocidad y ángulo) sin procesar. Luego se ejecutó el método \textit{move} de la clase \textit{Particle} repetidas veces hasta ejecutar todos los movimientos disponibles.
 
-ALGORITMO
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
+
+\begin{algorithm}
+\caption{Algoritmo simple con datos crudos}
+\begin{algorithmic}
+\State $particle \gets Particle(x(0), v(t), \theta(t))$
+\ForEach{$v(i) \in v(t), \theta(i) \in \theta(t) $}
+    \State $x(t+1) = move(x(t), v(i), \theta(i))$ 
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Partículas con series de tiempo con ruido}
 
-A fin de mejorar el trayecto, se realizó una simulación con un enjambre de 500 partículas. Cada partícula se inicializó con la posición inicial ligeramente desplazada (dentro de un radio de 50 metros) y copias de las series de tiempo de velocidad y ángulo de movimiento con ruidos normales superpuestos. Luego se ejecutó el trayecto completo para todas las partículas y se evaluó la política acumulada durante cada trayecto. Finalmente se seleccionó la mejor partícula como aquella con mayor valor de política acumulada. En resumen, el algoritmo de evolución sería el siguiente:
+A fin de mejorar los resultados obtenidos en el caso anterior, se realizó una simulación con un enjambre de 500 partículas. Cada partícula se inicializó con la posición inicial ligeramente desplazada (dentro de un radio de 50 metros) y copias de las series de tiempo de velocidad y ángulo de movimiento con ruidos normales superpuestos. Luego se ejecutó el trayecto completo para todas las partículas y se evaluó la aptitud de cada recorrido. Finalmente se seleccionó la mejor partícula como aquella con mayor valor de aptitud acumulada.
 
-ALGORITMO
+\algdef{SE}[REPEATN]{RepeatN}{End}[1]{\algorithmicrepeat\ #1 \textbf{times}}{\algorithmicend}
+
+\begin{algorithm}
+\caption{Algoritmo enjambre con datos con ruido}
+\begin{algorithmic}
+\RepeatN{$500$}
+    \State $particle_i \gets Particle(x_{noise}(0), v_{noise}(t), \theta_{noise}(t))$
+    \State $Fitness_i(0) = MapProbability(x_{noise}(0))$
+    \ForEach{$v_j \in v_{noise}(t), \theta(j) \in \theta_{noise}(t) $}
+        \State $x_i(t+1) = move(x_i(t), v_i(j), \theta_i(j))$ 
+        \If{$x_i(t+1) - x_i(t) \geq MinDistance$}
+            \State $Fitness_i(t+1) = MapProbability(x_i(t+1))$
+        \EndIf
+    \EndFor
+\End
+\State $BestParticle \gets Max(\sum Fitness(t))$
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{PSO}
 
-Sobre el caso anterior se realizó una mejora consistente en ejecutar cada cierta longitud de desplazamiento (configurada inicialmente en 50 metros) una corrida de 50 épocas del algoritmo PSO, donde la partícula se mueve una porción en la dirección y velocidad de la inercia (paso de movimiento anterior), otra porción en la dirección de la mejor posición encontrada por dicha partícula y una porción en la dirección de la mejor partícula (evaluada según la política) del enjambre. En resumen, el algoritmo de evolución sería el siguiente:
+Sobre el caso anterior se realizó una mejora consistente en ejecutar cada cierta longitud de desplazamiento (configurada inicialmente en 50 metros) una corrida de 50 épocas del algoritmo PSO, donde la partícula se mueve una porción en la dirección y velocidad de la inercia (paso de movimiento anterior), otra porción en la dirección de la mejor posición encontrada por dicha partícula y una porción en la dirección de la mejor partícula del enjambre (evaluada bajo la función de aptitud).
 
-ALGORITMO
-
+\begin{algorithm}
+\caption{PSO}
+\begin{algorithmic}
+\RepeatN{$500$}
+    \State $particle_i \gets Particle(x_{noise}(0), v_{noise}(t), \theta_{noise}(t))$
+    \State $Fitness_i(0) = MapProbability(x_{noise}(0))$
+\End
+\ForEach{$v_j \in v_{noise}(t), \theta(j) \in \theta_{noise}(t) $}
+    \RepeatN{$500 \ particles$}
+        \State $x_i'(t+1) = move(x_i(t), v_i(j), \theta_i(j))$ 
+    \End
+    \If{$\exists \ i \ / \ x_i'(t+1) - x_i(t) \geq MinDistance$}
+        \RepeatN{$50 \ epochs$}
+            \RepeatN{$500 \ particles$}
+                \State $x_i(epoch+1) = move(x_i(epoch), v_i(epoch), \theta_i(epoch), c_1 * (pbest_i -x_i(epoch)), c_2 * (gbest - x_i(epoch)))$ 
+                \State $Fitness_i(epoch+1) = MapProbability(x_i(epoch+1))$
+                \State $pbest_i \gets MaxMapProbability(pbest_i, x_i(epoch+1))$
+            \End
+            \State $gbest \gets MaxMapProbability(pbest_i \ \forall \ i)$
+        \End
+    \EndIf
+    \RepeatN{$500 \ particles$}
+        \State $x_i(t+1) = pbest_i$
+        \State $Fitness_i(t+1) = MapProbability(pbest_i)$
+    \End
+\EndFor
+\State $BestParticle \gets Max(\sum Fitness(t))$
+\end{algorithmic}
+\end{algorithm}
 
 \section{Resultados}
 
