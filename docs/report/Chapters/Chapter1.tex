@@ -160,7 +160,7 @@ Sobre el caso anterior se realizó una mejora consistente en ejecutar cada ciert
 
 \subsection{Datos crudos}
 
-Finalmente, se graficó el trayecto obtenido sobre el mapa, obteniendo la figura \ref{fig:journey_raw}. 
+El trayecto obtenido para una única partícula y datos de movimiento sin procesar se grafica en la figura \ref{fig:journey_raw}. Como se observa, el recorrido se aleja de posiciones válidas, pasando la mayor parte del mismo por encima del agua.
 
 \begin{figure}[htbp]
 	\centering
@@ -169,11 +169,9 @@ Finalmente, se graficó el trayecto obtenido sobre el mapa, obteniendo la figura
 	\label{fig:journey_raw}
 \end{figure}
 
-Como se observa, el recorrido se aleja de posiciones válidas, pasando la mayor parte del mismo por encima del agua.
-
 \subsection{Partículas con series de tiempo con ruido}
 
-El trayecto obtenido para la mejor partícula se grafica en la figura \ref{fig:journey_noise}. Se observa que si bien existe una mejora respecto al trayecto obtenido con los datos sin procesar, aún existen segmentos donde el recorrido se aleja de posiciones válidas, en especial en la mitad del mismo. En el siguiente \href{https://drive.google.com/file/d/1715t2DZ9hEKqsWBAROogAUpSU2egc3Sw/view?usp=sharing}{link} se puede validar el paso a paso de la evolución del trayecto a lo largo de la ejecución del algoritmo para todo el enjambre.
+Para la segunda simulación, se graficó el trayecto obtenido para la mejor partícula en la figura \ref{fig:journey_noise}. Se observa que si bien existe una mejora respecto al caso anterior, aún existen segmentos donde el recorrido se aleja de posiciones válidas, en especial en la mitad del mismo. En el siguiente \href{https://drive.google.com/file/d/1715t2DZ9hEKqsWBAROogAUpSU2egc3Sw/view?usp=sharing}{video} se puede validar el paso a paso de la evolución del trayecto a lo largo de la ejecución del algoritmo para todo el enjambre.
 
 \begin{figure}[htbp]
 	\centering
@@ -182,33 +180,73 @@ El trayecto obtenido para la mejor partícula se grafica en la figura \ref{fig:j
 	\label{fig:journey_noise}
 \end{figure}
  
-Para poder evaluar y comparar cuantitativamente este y el algoritmo siguiente, se realizaron dos gráficas de la evolución de la aptitud en función de los pasos de movimientos realizados. Este valor se calculo tanto en forma totalizada para las 500 partículas disponibles en la figura \ref{fig:fitness_noise_all_particle}, como para la mejor partícula en la figura \ref{fig:fitness_noise_max_particle}. En ambas figuras se puede ver y analizar con mayor detalle lo mencionado previamente, se observa un crecimiento sostenido inicial de la aptitud, zonas medias de estancamiento y una zona final de crecimiento leve. Más aún, tomando los valores finales, se obtuvieron un acumulado de aptitud de 23889, equivalente a un promedio de 82 por épocas total del enjambre o de 0.164 promedio por partícula por época (muy alejado del ideal de 1.0). Para la mejor partícula, y tomando los valores finales, se obtuvo un acumulado de 153, equivalente a aproximádamenete 0.5 por época promedio (también alejado del ideal).
+Para poder evaluar y comparar cuantitativamente este y el algoritmo siguiente, se realizaron adicionalmente dos gráficas de la evolución de la aptitud acumulada en función de los pasos de movimientos realizados. Este valor se calculo tanto en forma totalizada para las 500 partículas del enjambre en la figura \ref{fig:fitness_noise_all_particle}, como para la mejor partícula en la figura \ref{fig:fitness_noise_max_particle}. En ambos casos se puede ver y analizar con mayor detalle lo mencionado previamente, un crecimiento inicial sostenido, zonas medias de estancamiento y una zona final de crecimiento suave. Más aún, considerando los valores finales, se obtuvo un valor de aptitud acumulada para todo el enjambre de 23889, equivalente a un promedio de 0.164 promedio por partícula por época (muy alejado del ideal de 1.0). Para la mejor partícula se obtuvo un acumulado de 153, equivalente a 0.5 por época promedio, también alejado del ideal.
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=0.8\textwidth]{./Figures/fitness_noise_all_particle.png}
-	\caption{Función de aptitud acumulada de todas las partículas}
+	\caption{Función de aptitud acumulada de todas las partículas en segunda simulación.}
 	\label{fig:fitness_noise_all_particle}
 \end{figure}
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=0.8\textwidth]{./Figures/fitness_noise_max_particle.png}
-	\caption{Función de aptitud para mejor partícula.}
+	\caption{Función de aptitud para mejor partícula en segunda simulación.}
 	\label{fig:fitness_noise_max_particle}
 \end{figure}
 
 \subsection{PSO}
 
-El trayecto obtenido para la mejor partícula se grafica en la figura \ref{fig:journey_pso}. Se observa una mejora notoria respecto a los métodos anteriores, ya que ahora la partícula se mantiene en posiciones válidas durante todo el trayecto. En el siguiente \href{https://drive.google.com/file/d/1wSDkcD2eM4zI_VGLMLFX8jCljR5nznkf/view?usp=sharing}{link} se puede validar el paso a paso de la evolución del trayecto a lo largo de la ejecución del algoritmo.
+El trayecto obtenido para la mejor partícula del enjambre de la tercera simulación (algoritmo PSO) se grafica en la figura \ref{fig:journey_pso}. Se observa una mejora notoria respecto a los métodos anteriores: la partícula se mantiene en posiciones válidas durante todo el trayecto. En el siguiente \href{https://drive.google.com/file/d/1wSDkcD2eM4zI_VGLMLFX8jCljR5nznkf/view?usp=sharing}{video} se puede validar el paso a paso de la evolución del trayecto a lo largo de la ejecución del algoritmo.
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=0.8\textwidth]{./Figures/journey_pso.png}
-	\caption{Trayecto mejor partícula en enjambre de 500 partículas PSO.}
+	\caption{Trayecto mejor partícula en enjambre de 500 partículas y algoritmo PSO.}
 	\label{fig:journey_pso}
 \end{figure}
 
+Para profundizar el análisis comparativo con el caso anterior, se grafica la evolución de la aptitud acumulada en función de los pasos de movimientos realizados en forma totalizada para las 500 partículas del enjambre en la figura \ref{fig:fitness_pso_all_particle}, y para la mejor partícula en la figura \ref{fig:fitness_pso_max_particle}. A diferencia del caso anterior, en este caso se observa un crecimiento sostenido en todo el trayecto tanto para la mejor partícula como para todo el enjambre. Al considerar los valores finales, se obtuvo un valor de aptitud acumulada para todo el enjambre de 144536, equivalente a un promedio de 0.98 promedio por partícula por época (prácticamente ideal). Para la mejor partícula se obtuvo un acumulado de 292, equivalente a 0.99 por época promedio, también prácticamente ideal.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.8\textwidth]{./Figures/fitness_pso_all_particle.png}
+	\caption{Función de aptitud acumulada de todas las partículas en simulación PSO.}
+	\label{fig:fitness_pso_all_particle}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.8\textwidth]{./Figures/fitness_noise_max_particle.png}
+	\caption{Función de aptitud para mejor partícula en simulación PSO.}
+	\label{fig:fitness_pso_max_particle}
+\end{figure}
+
+A continuación, se buscó evaluar la idoneidad y performance de las corridas de PSO en diferentes partes del trayecto, para evaluar si los ajustes logrados por PSO fueron consistentes. Para esto se graficó la evolución de la función de aptitud (acumulada y promedio) para todas las partículas para 3 puntos en el trayecto: inicial, final y punto intermedio. Los resultados obtenidos se muestran en las figuras \ref{fig:fitness_pso_epochs_sum.png} y \ref{fig:fitness_pso_epochs_avg.png}. Se observa que, excepto para el punto medio donde las partículas ya (aleatoriamente) cayeron en posiciones válidas, en las otras dos épocas las partículas comenzaban relativamente dispersas (aptitud promedio menor a 0.85) y con las sucesivas ejecuciones de PSO todas las partículas convergen a posiciones válidas (aptitud promedio tendiente a 1.0). 
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.8\textwidth]{./Figures/fitness_pso_epochs_sum.png}
+	\caption{Evolución de aptitud totalizada para todas las partículas del enjambre, durante instancias de PSO de diferentes etapas de la trayectoria.}
+	\label{fig:fitness_pso_epochs_sum}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.8\textwidth]{./Figures/fitness_pso_epochs_avg.png}
+	\caption{Evolución de aptitud promedio de las partículas del enjambre, durante instancias de PSO de diferentes etapas de la trayectoria.}
+	\label{fig:fitness_pso_epochs_avg}
+\end{figure}
+
+Finalmente, también se graficó la distribución de valores para las mismas instanicas de PSO anteriores en un boxplot en la figura \ref{fig:fitness_pso_epochs_boxplot.png}. Se observa que la mayor parte de los valores se distribuye alrededor del puntaje ideal con unos muy pocos outliers, lo que indica que el algoritmo logrado es estable, preciso y consistente.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.8\textwidth]{./Figures/fitness_pso_epochs_boxplot.png}
+	\caption{Boxplot distribución de aptitud durante instancias de PSO de diferentes etapas de la trayectoria.}
+	\label{fig:fitness_pso_epochs_boxplot}
+\end{figure}
 
 \section{Conclusiones}
 \label{sec:conclusions}
