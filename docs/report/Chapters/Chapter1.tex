@@ -138,7 +138,7 @@ Sobre el caso anterior se realizó una mejora consistente en ejecutar cada ciert
         \State $x_i'(t+1) = move(x_i(t), v_i(j), \theta_i(j))$ 
     \End
     \If{$\exists \ i \ / \ x_i'(t+1) - x_i(t) \geq MinDistance$}
-        \RepeatN{$50 \ epochs$}
+        \RepeatN{$50 \ pso_{epochs}$}
             \RepeatN{$500 \ particles$}
                 \State $x_i(epoch+1) = move(x_i(epoch), v_i(epoch), \theta_i(epoch), c_1 * (pbest_i -x_i(epoch)), c_2 * (gbest - x_i(epoch)))$ 
                 \State $Fitness_i(epoch+1) = MapProbability(x_i(epoch+1))$
@@ -249,8 +249,11 @@ Finalmente, también se graficó la distribución de valores para las mismas ins
 \end{figure}
 
 \section{Conclusiones}
-\label{sec:conclusions}
 
+En el presente trabajo se comprobó la utilidad e idoneidad del algoritmo PSO para ajustar la trayectoria obtenida al mover un objeto desde un punto inicial conocido en la superficie Terrestre, utilizando mediciones de velocidad y ángulo de movimiento respecto al norte obtenidos de sensores físicos y, por lo tanto, con ruido de medición agregado. 
+Se evidenció que utilizar las mediciones sin procesar conduce a trayectorias mayormente inválidas, que atraviesan centros de manzanas o lugares no navegables. También se comprobó que realizar múltiples simulaciones con ruido superpuesto tampoco converge a una trayectoria válida. Finalmente, PSO logró ajustar las posiciones a zonas válidas mientras que preserva la forma general de la trayectoria original.
+Entre las dificultades encontradas se puede mencionar el costo computacional requerido. Ejecutar el algoritmo de PSO para muchas partículas requiere un gran costo computacional, por lo que fue necesario optimizar el número de partículas utilizadas en el algoritmo, así como también implementar el mecanismo de mínima distancia recorrida para disminuir el número de instancias totales de PSO ejecutadas y así lograr un tiempo total de ejecución aceptable. Más aún, se intentó realizar una prueba de concepto donde la posición original también es desconocida, llenando el mapa de partículas y descartando aquellas que aún ejecutando el algoritmo anterior terminaban en posiciones poco probables, pero el costo computacional era tan elevado que hacía inviable lograr resultados en el tiempo disponible. Por otro lado también fue necesario realizar un ajuste de los hiperparámetros de PSO $w$, $c_1$, $c_2$ y $pso_{epochs}$, de manera de lograr una buena exploración del espacio, mientras que se respetan la estabilidad y convergencia del algoritmo y también se respeta la forma general de la trayectoria marcada por los datos de los sensores.
 
 \section{Trabajo futuro}
 
+Como trabajo futuro se plantea profundizar en el caso donde la posición inicial es desconocida, siendo necesario trabajar en diversas optimizaciones (y posiblemente en paralelizar los cálculos) para poder lograr tiempos de ejecución razonables.
