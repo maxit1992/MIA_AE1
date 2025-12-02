@@ -22,32 +22,32 @@
 %----------------------------------------------------------------------------------------
 \section{Introducción}
 
-En el presente trabajo práctico, se desarrolla la implementación del algoritmo de Optimización por Enjambre de Partículas (PSO) en la búsqueda de una solución óptima a un problema de posicionamiento y recorrido. El objetivo es poder evaluar la implementación e idoneidad del algoritmo y compararlo con otros métodos más simples.
+En el presente trabajo, se desarrolla la implementación del algoritmo de Optimización por Enjambre de Partículas (PSO) en la búsqueda de una solución óptima a un problema de posicionamiento y recorrido. El objetivo es evaluar el rendimiento del algoritmo y compararlo con otros métodos más simples.
 
-En el problema planteado se parte de una única posición global inicial conocida a partir de la cual solo se dispone de mediciones de velocidad y ángulo de movimiento respecto al norte. El objetivo es poder continuar trazando una ubicación precisa e idónea del recorrido realizado, sin contar con las mediciones de posicionamiento. Esta situación es común en sistemas embebidos y puede ocurrir ya sea por pérdida de señal del GPS (por ejemplo por un diseño incorrecto de la antena de recepción, por fallas en el software del dispositivo o por pérdida de línea de vista al cielo) o bien porque se desea reducir el consumo eléctrico y se hace un apagado temporal del GPS.
+En el caso planteado, se parte de una posición global conocida y luego se dispone solamente de mediciones de velocidad y ángulo de movimiento respecto al norte. La meta es poder continuar trazando una ubicación precisa e idónea del recorrido realizado sin contar con las mediciones de posicionamiento. Esta situación es común en sistemas embebidos cuando se pierde le señal del GPS (por ejemplo por un diseño incorrecto de la antena de recepción, por fallas en el software del dispositivo o por pérdida de línea de vista al cielo) o cuando intencionalmente se hace un apagado temporal del GPS para reducir el consumo eléctrico.
 
-Inicialmente se realizó una prueba utilizando datos reales de sensores y se comprobó que que el ruido inherente de los mismos genera un  recorrido muy alejado del real. Por este motivo, se prosiguió con una simulación con optimización PSO para lograr ajustar las mediciones a valores óptimos que mejorarán el recorrido simulado.
+Inicialmente se realizó una prueba utilizando datos reales de sensores y se comprobó que el ruido inherente de los mismos genera un recorrido alejado del real. Por este motivo, se prosiguió con una simulación con optimización PSO que ajusta las posiciones a valores óptimos que mejoran la precisión del recorrido.
 
 \section{Datos}
 
-Para poder obtener datos sobre los cuales trabajar, se realizó un recorrido por la ciudad de Rosario en auto y se utilizó un celular para hacer el registro de datos de los sensores junto con la información del GPS. Se probará si es posible realizar el seguimiento del vehículo utilizando solamente la latitud y longitud del GPS del punto de inicio y los valores de la velocidad (en metros/segundos) y ángulo de movimiento (en grados respecto al norte). A modo de ejemplo, en la figura \ref{fig:route_ds} se muestran las primeras lineas de los datos recolectados .
+Los datos sobre los cuales se trabajó fueron obtenidos realizando un circuito en auto por la ciudad de Rosario y utilizando un celular para hacer el registro de los sensores disponibles y del GPS. En la figura \ref{fig:route_ds} se muestran los primeros registros recolectados. De estos, solo se utilizó la latitud y longitud del GPS del punto de inicio y los valores de la velocidad (en metros/segundos) y ángulo de movimiento (en grados respecto al norte) de todo el recorrido.
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=\textwidth]{./Figures/route_ds.png}
-	\caption{Registro de datos de sensores para el recorrido a utilizar.}
+	\caption{Primeros registros de datos recolectados.}
 	\label{fig:route_ds}
 \end{figure}
 
 \section{Mapa}
 
-Para realizar las simulaciones es necesario contar con utilidades que realicen gráficos y cálculos geográficos. Con este fin se implementó en Python la clase \textit{Map} con la siguientes características:
+Ejecutar las simulaciones requirió del desarrollo de utilidades que realizaran gráficos y cálculos geográficos. Con este fin se implementó en Python la clase \textit{Map} con la siguientes características:
 \begin{itemize}
-    \item Utiliza la librería OpenCV y Matplotlib para poder trazar el mapa de la zona de interés y marcar sobre el mismo puntos rojos que representan posiciones (latitud y longitud) y trayectos. En la figura \ref{fig:map} se observa el mapa utilizado. 
+    \item Utiliza la librería OpenCV y Matplotlib para trazar el mapa de la zona de interés y marcar sobre el mismo puntos rojos que representan posiciones (latitud y longitud) y trayectos. En la figura \ref{fig:map} se observa el mapa utilizado. 
     \item Método de calibración para transformar entre latitud/longitud $\Leftrightarrow$ pixeles verticales/horizontales sobre la imagen del mapa, de manera de poder utilizar indistintamente cualquiera de los dos sistemas de referencia. Durante la calibración, se tomaron 4 puntos de referencia conocidos y se entrenaron dos modelos de regresión lineal.
     \item Algoritmo que permite obtener el punto final (latitud y longitud) luego de desplazarse una cierta cantidad de metros, con un cierto ángulo respecto al norte, desde una posición inicial conocida.
-    \item Algoritmo Haversine para obtener la distancia en metros y el ángulo respecto al norte del segmento sobre la superficie Terrestre que conecta dos puntos con posiciones conocidas.
-    \item Soporte de mapa de política con máscaras de probabilidad. (figura \ref{fig:policy}) que asignan a cada pixel del mapa original un valor entre 0 y 1 según la posición sea más probable o menos. Así, las calles y avenidas tendrán un valor de 1, mientras que los centros de manzana, el río y zonas donde es imposible realizar un recorrido tienen valor 0. Entre ambos valores 1 y 0, la máscara asigna valores decrecientes para poder obtener una política que varía en forma suave.
+    \item Algoritmo Haversine para obtener la distancia en metros y el ángulo respecto al norte del segmento sobre la superficie terrestre que conecta dos puntos con posiciones conocidas.
+    \item Soporte de mapa de aptitud con máscara de probabilidad.
     
 \end{itemize}
 
@@ -60,7 +60,7 @@ Para realizar las simulaciones es necesario contar con utilidades que realicen g
 
 \section{Mapa de aptitud}
 
-Cuantificar el ajuste o idoneidad de un trayecto requiere de una métrica medible. Esta métrica se puede obtener utilizando un mapa de aptitud con máscaras de probabilidad, que asignan a cada pixel del mapa original un valor entre 0 y 1.0 según la posición sea más probable o menos. Así, las calles y avenidas tendrán un valor de 1.0, mientras que los centros de manzana, el río y zonas donde es imposible realizar un recorrido tienen valor 0. Entre ambos extremos, la máscara asigna valores decrecientes para poder obtener una función de aptitud que varía en forma suave. Estos valores de probabildiad nos permiten cuantificar tanto la aptitud de una posición única (obteniendo la probabilidad de ese pixel) o la aptitud de un recorrido acumulando la aptitud de cada una de las posiciones. En la figura \ref{fig:policy} se muestra el mapa mencionado. 
+Cuantificar la idoneidad de una posición o trayecto requiere de una métrica medible. Esta se puede obtener utilizando un mapa de aptitud con una máscara de probabilidad que asigna un valor entre 0 y 1.0 a cada pixel del mapa original, según la posición sea más o menos probable. Las calles y avenidas tienen un valor de 1.0, mientras que los centros de manzana, el río y zonas donde no es posible transitar tienen valor 0. Entre ambos extremos, la máscara asigna valores decrecientes en forma suave. Así, para obtener la aptitud de una posición única se utiliza la probabilidad de la máscara en ese pixel, y para la de un recorrido se acumulan las probabilidades individuales de cada una de las posiciones. En la figura \ref{fig:policy} se muestra el mapa de aptitud utilizado en este trabajo. 
 
 \begin{figure}[htbp]
 	\centering
@@ -71,20 +71,20 @@ Cuantificar el ajuste o idoneidad de un trayecto requiere de una métrica medibl
 
 \section{Partícula}
 
-Otra utilidad necesaria es la clase que modela el objeto que se desplaza por el mapa. Este objeto se implementó en Python en la clase \textit{Particle}, y posee las siguientes características:
+Otra utilidad necesaria fue la clase que modela el objeto que se desplaza por el mapa. Este objeto se implementó en Python en la clase \textit{Particle} con las siguientes características:
 \begin{itemize}
-    \item Se inicializa con una posición inicial (latitud, longitud), una serie de tiempo de velocidad y de ángulo de movimiento respecto al norte, y una instancia de la clase \textit{Map} donde se realizará el recorrido.
-    \item Provee métodos para moverse un paso de tiempo, utilizando las series de tiempo provistas en la inicialización.
-    \item Provee métodos para acumular distancia desplazada. Esto es útil para no ejecutar algoritmos en cada paso de tiempo (donde el desplazamiento puede haber sido de 0 metros si el objeto se encontraba parado), sino luego de desplazarse determinada distancia.
-    \item Provee métodos para evaluar una posición o un movimiento en base al mapa de aptitud cargado en la instancia de la clase \textit{Map}.
-    \item Provee métodos para ejecutar el algoritmo PSO, en base a la posición actual, la mejor posición (medida con respecto a la aptitud) hasta el momento de la partícula en cuestión, y la posición de la mejor partícula del enjambre.
+    \item Se inicializa con una posición inicial (latitud, longitud), las series de tiempo de velocidad y ángulo de movimiento del recorrido, y la instancia de la clase \textit{Map} con la zona de interés.
+    \item Posee métodos para moverse un paso de tiempo, utilizando las series de tiempo provistas.
+    \item Posee métodos para acumular distancia desplazada. Esto resulta útil al optimizar cálculos ya que permite no ejecutar los algoritmos en cada paso de tiempo, donde el desplazamiento puede haber sido de 0 metros si el objeto se encontraba detenido.
+    \item Posee métodos para evaluar una posición o un movimiento en base al mapa de aptitud de la clase \textit{Map}.
+    \item Posee métodos para ejecutar el algoritmo PSO.
 \end{itemize}
 
 \section{Simulación}
 
 \subsection{Datos crudos}
 
-Inicialmente, y a fin de tener una base de comparación, se crea una única partícula con posición inicial conocida y se utilizan los datos originales de movimiento (velocidad y ángulo) sin procesar. Luego se ejecutó el método \textit{move} de la clase \textit{Particle} repetidas veces hasta ejecutar todos los movimientos disponibles.
+Inicialmente, y a fin de tener una base de comparación, se creó una única partícula con posición inicial conocida y se utilizaron los datos originales de movimiento (velocidad y ángulo) sin procesar. Ejecutando el método \textit{move} de la clase \textit{Particle} repetidas veces hasta agotar todos los movimientos disponibles, se obtuvo el recorrido para la primer simulación.
 
 \algnewcommand\algorithmicforeach{\textbf{for each}}
 \algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
@@ -93,25 +93,25 @@ Inicialmente, y a fin de tener una base de comparación, se crea una única part
 \caption{Algoritmo simple con datos crudos}
 \begin{algorithmic}
 \State $particle \gets Particle(x(0), v(t), \theta(t))$
-\ForEach{$v(i) \in v(t), \theta(i) \in \theta(t) $}
-    \State $x(t+1) = move(x(t), v(i), \theta(i))$ 
+\ForEach{$v(j) \in v(t), \theta(j) \in \theta(t) $}
+    \State $x(t+1) = move(x(t), v(j), \theta(j))$ 
 \EndFor
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Partículas con series de tiempo con ruido}
+\subsection{Enjambre con series de tiempo con ruido}
 
-A fin de mejorar los resultados obtenidos en el caso anterior, se realizó una simulación con un enjambre de 500 partículas. Cada partícula se inicializó con la posición inicial ligeramente desplazada (dentro de un radio de 50 metros) y copias de las series de tiempo de velocidad y ángulo de movimiento con ruidos normales superpuestos. Luego se ejecutó el trayecto completo para todas las partículas y se evaluó la aptitud de cada recorrido. Finalmente se seleccionó la mejor partícula como aquella con mayor valor de aptitud acumulada.
+En una segunda simulación se utilizó un enjambre de 500 partículas. Cada partícula se inicializó con posiciones iniciales ligeramente desplazadas (dentro de un radio de 50 metros) y con copias de las series de tiempo de velocidad y ángulo de movimiento con ruidos gaussianos superpuestos. Se ejecutó el trayecto completo para todas las partículas y se evaluó la aptitud acumulada de cada recorrido, seleccionando la mejor partícula como aquella con mayor valor de aptitud acumulada.
 
-\algdef{SE}[REPEATN]{RepeatN}{End}[1]{\algorithmicrepeat\ #1 \textbf{times}}{\algorithmicend}
+\algdef{SE}[REPEATN]{RepeatN}{End}[1]{\algorithmicrepeat \ \textbf{for} \ #1}{\algorithmicend}
 
 \begin{algorithm}
 \caption{Algoritmo enjambre con datos con ruido}
 \begin{algorithmic}
-\RepeatN{$500$}
+\RepeatN{$500 \ particles$}
     \State $particle_i \gets Particle(x_{noise}(0), v_{noise}(t), \theta_{noise}(t))$
     \State $Fitness_i(0) = MapProbability(x_{noise}(0))$
-    \ForEach{$v_j \in v_{noise}(t), \theta(j) \in \theta_{noise}(t) $}
+    \ForEach{$v(j) \in v_{noise}(t), \theta(j) \in \theta_{noise}(t) $}
         \State $x_i(t+1) = move(x_i(t), v_i(j), \theta_i(j))$ 
         \If{$x_i(t+1) - x_i(t) \geq MinDistance$}
             \State $Fitness_i(t+1) = MapProbability(x_i(t+1))$
@@ -124,24 +124,25 @@ A fin de mejorar los resultados obtenidos en el caso anterior, se realizó una s
 
 \subsection{PSO}
 
-Sobre el caso anterior se realizó una mejora consistente en ejecutar cada cierta longitud de desplazamiento (configurada inicialmente en 50 metros) una corrida de 50 épocas del algoritmo PSO, donde la partícula se mueve una porción en la dirección y velocidad de la inercia (paso de movimiento anterior), otra porción en la dirección de la mejor posición encontrada por dicha partícula y una porción en la dirección de la mejor partícula del enjambre (evaluada bajo la función de aptitud).
+En una última simulación, se realizó una mejora sobre el caso anterior consistente en ejecutar cada cierta longitud de desplazamiento (configurada inicialmente en 50 metros) instancias de 50 épocas del algoritmo PSO, donde la partícula se mueve una porción (dada por $w$) en la dirección y velocidad de la inercia (paso de movimiento anterior), otra porción (dada por $c_1$) en la dirección de la mejor posición encontrada por dicha partícula hasta el momento y una porción (dada por $c_2$) en la dirección de la mejor partícula del enjambre. La forma en la que se determinó
+las mejores posiciones locales y globales fue mediante la función de aptitud ya mencionada. Los coeficientes $w$, $c_1$ y $c_2$ son hiperparámetros que fueron ajustados manualmente.
 
 \begin{algorithm}
 \caption{PSO}
 \begin{algorithmic}
-\RepeatN{$500$}
+\RepeatN{$500 \ particles$}
     \State $particle_i \gets Particle(x_{noise}(0), v_{noise}(t), \theta_{noise}(t))$
     \State $Fitness_i(0) = MapProbability(x_{noise}(0))$
 \End
-\ForEach{$v_j \in v_{noise}(t), \theta(j) \in \theta_{noise}(t) $}
+\ForEach{$v(j) \in v_{noise}(t), \theta(j) \in \theta_{noise}(t) $}
     \RepeatN{$500 \ particles$}
         \State $x_i'(t+1) = move(x_i(t), v_i(j), \theta_i(j))$ 
     \End
     \If{$\exists \ i \ / \ x_i'(t+1) - x_i(t) \geq MinDistance$}
         \RepeatN{$50 \ pso_{epochs}$}
-            \RepeatN{$500 \ particles$}
-                \State $x_i(epoch+1) = move(x_i(epoch), v_i(epoch), \theta_i(epoch), c_1 * (pbest_i -x_i(epoch)), c_2 * (gbest - x_i(epoch)))$ 
-                \State $Fitness_i(epoch+1) = MapProbability(x_i(epoch+1))$
+            \RepeatN{$500 \ particles $}
+                \State $x_i(epoch+1) = move( w* \Delta x_i(epoch), c_1 * (pbest_i -x_i(epoch)), $ 
+                \State $ \hspace{4cm} c_2 * (gbest - x_i(epoch)))$ 
                 \State $pbest_i \gets MaxMapProbability(pbest_i, x_i(epoch+1))$
             \End
             \State $gbest \gets MaxMapProbability(pbest_i \ \forall \ i)$
@@ -160,100 +161,102 @@ Sobre el caso anterior se realizó una mejora consistente en ejecutar cada ciert
 
 \subsection{Datos crudos}
 
-El trayecto obtenido para una única partícula y datos de movimiento sin procesar se grafica en la figura \ref{fig:journey_raw}. Como se observa, el recorrido se aleja de posiciones válidas, pasando la mayor parte del mismo por encima del agua.
+El trayecto obtenido para una única partícula y datos de movimiento sin procesar se muestra en la figura \ref{fig:journey_raw}. Se observa que el recorrido se aleja de posiciones válidas y la mayor parte del mismo transcurre por encima del agua.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/journey_raw.png}
+	\includegraphics[width=.7\textwidth]{./Figures/journey_raw.png}
 	\caption{Trayecto partícula única con datos sin procesar.}
 	\label{fig:journey_raw}
 \end{figure}
 
-\subsection{Partículas con series de tiempo con ruido}
+\subsection{Enjambre con series de tiempo con ruido}
 
-Para la segunda simulación, se graficó el trayecto obtenido para la mejor partícula en la figura \ref{fig:journey_noise}. Se observa que si bien existe una mejora respecto al caso anterior, aún existen segmentos donde el recorrido se aleja de posiciones válidas, en especial en la mitad del mismo. En el siguiente \href{https://drive.google.com/file/d/1715t2DZ9hEKqsWBAROogAUpSU2egc3Sw/view?usp=sharing}{video} se puede validar el paso a paso de la evolución del trayecto a lo largo de la ejecución del algoritmo para todo el enjambre.
+El trayecto obtenido para la mejor partícula de la segunda simulación se muestra en la figura \ref{fig:journey_noise}. Si bien existe una mejora respecto al caso anterior, aún existen segmentos donde el recorrido se aleja de posiciones válidas, en especial en la mitad del mismo. En el siguiente \href{https://drive.google.com/file/d/1715t2DZ9hEKqsWBAROogAUpSU2egc3Sw/view?usp=sharing}{video} se puede validar el paso a paso de la evolución del trayecto a lo largo de la ejecución del algoritmo para todo el enjambre.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/journey_noise.png}
-	\caption{Trayecto mejor partícula en enjambre de 500 partículas con datos con ruido.}
+	\includegraphics[width=.7\textwidth]{./Figures/journey_noise.png}
+	\caption{Trayecto mejor partícula en segunda simulación.}
 	\label{fig:journey_noise}
 \end{figure}
  
-Para poder evaluar y comparar cuantitativamente este y el algoritmo siguiente, se realizaron adicionalmente dos gráficas de la evolución de la aptitud acumulada en función de los pasos de movimientos realizados. Este valor se calculo tanto en forma totalizada para las 500 partículas del enjambre en la figura \ref{fig:fitness_noise_all_particle}, como para la mejor partícula en la figura \ref{fig:fitness_noise_max_particle}. En ambos casos se puede ver y analizar con mayor detalle lo mencionado previamente, un crecimiento inicial sostenido, zonas medias de estancamiento y una zona final de crecimiento suave. Más aún, considerando los valores finales, se obtuvo un valor de aptitud acumulada para todo el enjambre de 23889, equivalente a un promedio de 0.164 promedio por partícula por época (muy alejado del ideal de 1.0). Para la mejor partícula se obtuvo un acumulado de 153, equivalente a 0.5 por época promedio, también alejado del ideal.
+Para poder comparar cuantitativamente este y el algoritmo siguiente, se crearon gráficas de la evolución de la aptitud acumulada en función de los pasos de movimiento. Este valor se calculó tanto en forma totalizada para las 500 partículas del enjambre en la figura \ref{fig:fitness_noise_all_particle}, como para la mejor partícula en la figura \ref{fig:fitness_noise_max_particle}. En ambos casos se puede analizar con mayor detalle lo mencionado previamente: un crecimiento inicial sostenido, zonas medias de estancamiento y una zona final de crecimiento suave. Más aún, considerando solo los valores finales, se obtuvo un valor de aptitud acumulada para todo el enjambre de 23889, equivalente a un promedio de 0.164 por partícula por época (muy alejado del ideal de 1.0); mientras que para la mejor partícula se obtuvo un acumulado de 153, equivalente a 0.5 por época promedio, también alejado del ideal.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/fitness_noise_all_particle.png}
-	\caption{Función de aptitud acumulada de todas las partículas en segunda simulación.}
+	\includegraphics[width=\textwidth]{./Figures/fitness_noise_all_particle.png}
+	\caption{Aptitud acumulada del enjambre en segunda simulación.}
 	\label{fig:fitness_noise_all_particle}
 \end{figure}
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/fitness_noise_max_particle.png}
-	\caption{Función de aptitud para mejor partícula en segunda simulación.}
+	\includegraphics[width=\textwidth]{./Figures/fitness_noise_max_particle.png}
+	\caption{Aptitud acumulada de mejor partícula en segunda simulación.}
 	\label{fig:fitness_noise_max_particle}
 \end{figure}
 
 \subsection{PSO}
 
-El trayecto obtenido para la mejor partícula del enjambre de la tercera simulación (algoritmo PSO) se grafica en la figura \ref{fig:journey_pso}. Se observa una mejora notoria respecto a los métodos anteriores: la partícula se mantiene en posiciones válidas durante todo el trayecto. En el siguiente \href{https://drive.google.com/file/d/1wSDkcD2eM4zI_VGLMLFX8jCljR5nznkf/view?usp=sharing}{video} se puede validar el paso a paso de la evolución del trayecto a lo largo de la ejecución del algoritmo.
+El trayecto obtenido para la mejor partícula del enjambre de la tercera simulación (algoritmo PSO) se muestra en la figura \ref{fig:journey_pso}. Se observa una mejora notoria respecto a los métodos anteriores ya que la partícula se mantiene en posiciones válidas en todo momento. En el siguiente \href{https://drive.google.com/file/d/1wSDkcD2eM4zI_VGLMLFX8jCljR5nznkf/view?usp=sharing}{video} se puede validar el paso a paso de la evolución del recorrido a lo largo de la ejecución del algoritmo.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/journey_pso.png}
-	\caption{Trayecto mejor partícula en enjambre de 500 partículas y algoritmo PSO.}
+	\includegraphics[width=.7\textwidth]{./Figures/journey_pso.png}
+	\caption{Trayecto mejor partícula en simulación PSO.}
 	\label{fig:journey_pso}
 \end{figure}
 
-Para profundizar el análisis comparativo con el caso anterior, se grafica la evolución de la aptitud acumulada en función de los pasos de movimientos realizados en forma totalizada para las 500 partículas del enjambre en la figura \ref{fig:fitness_pso_all_particle}, y para la mejor partícula en la figura \ref{fig:fitness_pso_max_particle}. A diferencia del caso anterior, en este caso se observa un crecimiento sostenido en todo el trayecto tanto para la mejor partícula como para todo el enjambre. Al considerar los valores finales, se obtuvo un valor de aptitud acumulada para todo el enjambre de 144536, equivalente a un promedio de 0.98 promedio por partícula por época (prácticamente ideal). Para la mejor partícula se obtuvo un acumulado de 292, equivalente a 0.99 por época promedio, también prácticamente ideal.
+Para profundizar el análisis comparativo con el caso anterior, se muestra la evolución de la aptitud acumulada en función de los pasos de movimientos realizados en forma totalizada para las 500 partículas del enjambre en la figura \ref{fig:fitness_pso_all_particle} y para la mejor partícula en la figura \ref{fig:fitness_pso_max_particle}. A diferencia del caso anterior, se observa un crecimiento sostenido constante en ambos gráficos. Al considerar los valores finales, se obtuvo un valor de aptitud acumulada para todo el enjambre de 144536, equivalente a un promedio de 0.98 por partícula por época (prácticamente ideal); mientras que para la mejor partícula se obtuvo un acumulado de 292, equivalente a 0.99 por época promedio, también prácticamente ideal.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/fitness_pso_all_particle.png}
-	\caption{Función de aptitud acumulada de todas las partículas en simulación PSO.}
+	\includegraphics[width=\textwidth]{./Figures/fitness_pso_all_particle.png}
+	\caption{Aptitud acumulada del enjambre en simulación PSO.}
 	\label{fig:fitness_pso_all_particle}
 \end{figure}
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/fitness_noise_max_particle.png}
-	\caption{Función de aptitud para mejor partícula en simulación PSO.}
+	\includegraphics[width=\textwidth]{./Figures/fitness_pso_max_particle.png}
+	\caption{Aptitud acumulada de mejor partícula en simulación PSO.}
 	\label{fig:fitness_pso_max_particle}
 \end{figure}
 
-A continuación, se buscó evaluar la idoneidad y performance de las corridas de PSO en diferentes partes del trayecto, para evaluar si los ajustes logrados por PSO fueron consistentes. Para esto se graficó la evolución de la función de aptitud (acumulada y promedio) para todas las partículas para 3 puntos en el trayecto: inicial, final y punto intermedio. Los resultados obtenidos se muestran en las figuras \ref{fig:fitness_pso_epochs_sum.png} y \ref{fig:fitness_pso_epochs_avg.png}. Se observa que, excepto para el punto medio donde las partículas ya (aleatoriamente) cayeron en posiciones válidas, en las otras dos épocas las partículas comenzaban relativamente dispersas (aptitud promedio menor a 0.85) y con las sucesivas ejecuciones de PSO todas las partículas convergen a posiciones válidas (aptitud promedio tendiente a 1.0). 
+A continuación se buscó evaluar el desempeño de las diferentes instancias de PSO en distintas partes del trayecto. Para esto se graficó la evolución de la función de aptitud (acumulada y promedio) para todas las partículas para 3 puntos del trayecto: inicial, medio y final. Los resultados obtenidos se muestran en las figuras \ref{fig:fitness_pso_epochs_sum} y \ref{fig:fitness_pso_epochs_avg}. Se observa que, excepto por el punto medio donde las partículas aleatoriamente ya iniciaron en posiciones válidas, en los otros dos casos las partículas comenzaban relativamente dispersas (aptitud promedio menor a 0.85) y con las sucesivas ejecuciones de PSO todas las partículas convergen a posiciones válidas (aptitud promedio tendiente a 1.0). 
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/fitness_pso_epochs_sum.png}
-	\caption{Evolución de aptitud totalizada para todas las partículas del enjambre, durante instancias de PSO de diferentes etapas de la trayectoria.}
+	\includegraphics[width=\textwidth]{./Figures/fitness_pso_epochs_sum.png}
+	\caption{Aptitud del enjambre durante ejecución PSO en diferentes etapas de la trayectoria.}
 	\label{fig:fitness_pso_epochs_sum}
 \end{figure}
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/fitness_pso_epochs_avg.png}
-	\caption{Evolución de aptitud promedio de las partículas del enjambre, durante instancias de PSO de diferentes etapas de la trayectoria.}
+	\includegraphics[width=\textwidth]{./Figures/fitness_pso_epochs_avg.png}
+	\caption{Aptitud promedio de las partículas del enjambre durante ejecución PSO en diferentes etapas de la trayectoria.}
 	\label{fig:fitness_pso_epochs_avg}
 \end{figure}
 
-Finalmente, también se graficó la distribución de valores para las mismas instanicas de PSO anteriores en un boxplot en la figura \ref{fig:fitness_pso_epochs_boxplot.png}. Se observa que la mayor parte de los valores se distribuye alrededor del puntaje ideal con unos muy pocos outliers, lo que indica que el algoritmo logrado es estable, preciso y consistente.
+Para finalizar, se graficó un diagrama de cajas para las mismas instancias de PSO en la figura \ref{fig:fitness_pso_epochs_boxplot}. Se observa que la mayor parte de los valores (exceptuando unos pocos outliers) se distribuyen alrededor del puntaje ideal, lo que indica que el algoritmo logrado es estable, preciso y consistente.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{./Figures/fitness_pso_epochs_boxplot.png}
-	\caption{Boxplot distribución de aptitud durante instancias de PSO de diferentes etapas de la trayectoria.}
+	\includegraphics[width=\textwidth]{./Figures/fitness_pso_epochs_boxplot.png}
+	\caption{Diagrama de cajas de aptitud durante ejecución PSO en diferentes etapas de la trayectoria.}
 	\label{fig:fitness_pso_epochs_boxplot}
 \end{figure}
 
 \section{Conclusiones}
 
-En el presente trabajo se comprobó la utilidad e idoneidad del algoritmo PSO para ajustar la trayectoria obtenida al mover un objeto desde un punto inicial conocido en la superficie Terrestre, utilizando mediciones de velocidad y ángulo de movimiento respecto al norte obtenidos de sensores físicos y, por lo tanto, con ruido de medición agregado. 
-Se evidenció que utilizar las mediciones sin procesar conduce a trayectorias mayormente inválidas, que atraviesan centros de manzanas o lugares no navegables. También se comprobó que realizar múltiples simulaciones con ruido superpuesto tampoco converge a una trayectoria válida. Finalmente, PSO logró ajustar las posiciones a zonas válidas mientras que preserva la forma general de la trayectoria original.
-Entre las dificultades encontradas se puede mencionar el costo computacional requerido. Ejecutar el algoritmo de PSO para muchas partículas requiere un gran costo computacional, por lo que fue necesario optimizar el número de partículas utilizadas en el algoritmo, así como también implementar el mecanismo de mínima distancia recorrida para disminuir el número de instancias totales de PSO ejecutadas y así lograr un tiempo total de ejecución aceptable. Más aún, se intentó realizar una prueba de concepto donde la posición original también es desconocida, llenando el mapa de partículas y descartando aquellas que aún ejecutando el algoritmo anterior terminaban en posiciones poco probables, pero el costo computacional era tan elevado que hacía inviable lograr resultados en el tiempo disponible. Por otro lado también fue necesario realizar un ajuste de los hiperparámetros de PSO $w$, $c_1$, $c_2$ y $pso_{epochs}$, de manera de lograr una buena exploración del espacio, mientras que se respetan la estabilidad y convergencia del algoritmo y también se respeta la forma general de la trayectoria marcada por los datos de los sensores.
+Se comprobó la utilidad del algoritmo PSO para ajustar trayectorias obtenidas al mover un objeto desde un punto inicial conocido en la superficie terrestre y utilizando mediciones de velocidad y ángulo de movimiento respecto al norte obtenidas de sensores físicos.
+
+Se evidenció que utilizar las mediciones sin procesar conduce a trayectorias mayormente inválidas y que realizar múltiples simulaciones con el artilugio de agregar ruido gaussiano tampoco converge a resultados aceptables. Bajo estas condiciones, se demostró que PSO logra resultados cualitativa y cuantitativamente aptos, ajustando las posiciones a zonas válidas y preservando la forma general de la trayectoria original.
+
+Entre las dificultades encontradas se menciona principalmente el costo computacional requerido. Ejecutar el algoritmo de PSO para muchas partículas requiere un tiempo de cómputo considerable, por lo que fue necesario optimizar el número de partículas utilizadas en el algoritmo e implementar el mecanismo de mínima distancia recorrida para disminuir el número de instancias totales de PSO ejecutadas. Más aún, se intentó realizar una prueba de concepto partiendo de una posición inicial también desconocida, llenando el mapa de partículas y descartando aquellas que aún ejecutando el algoritmo anterior terminaban en posiciones poco probables, pero el costo computacional era tan elevado que hacía inviable lograr resultados en el tiempo disponible. Por otro lado ajustar los hiperparámetros de PSO $w$, $c_1$, $c_2$ y $pso_{epochs}$ también tuvo su complejidad, ya que se buscaba lograr una buena exploración del espacio mientras que se mantenían la estabilidad y velocidad de convergencia del algoritmo y también se respetaba la forma general de la trayectoria marcada por los datos de los sensores.
 
 \section{Trabajo futuro}
 
-Como trabajo futuro se plantea profundizar en el caso donde la posición inicial es desconocida, siendo necesario trabajar en diversas optimizaciones (y posiblemente en paralelizar los cálculos) para poder lograr tiempos de ejecución razonables.
+Como trabajo futuro se plantea profundizar en el caso donde la posición inicial es desconocida, siendo necesario trabajar en diversas optimizaciones (posiblemente ejecutar los cálculos en forma paralela) para poder lograr tiempos de ejecución razonables.
